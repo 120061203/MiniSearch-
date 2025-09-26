@@ -1,0 +1,7 @@
+/Users/songlin.chen/Documents/MiniSearch++/build/CMakeFiles/mini_search_engine.dir
+/Users/songlin.chen/Documents/MiniSearch++/build/CMakeFiles/edit_cache.dir
+/Users/songlin.chen/Documents/MiniSearch++/build/CMakeFiles/rebuild_cache.dir
+/Users/songlin.chen/Documents/MiniSearch++/build/CMakeFiles/list_install_components.dir
+/Users/songlin.chen/Documents/MiniSearch++/build/CMakeFiles/install.dir
+/Users/songlin.chen/Documents/MiniSearch++/build/CMakeFiles/install/local.dir
+/Users/songlin.chen/Documents/MiniSearch++/build/CMakeFiles/install/strip.dir
