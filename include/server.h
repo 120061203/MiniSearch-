@@ -15,8 +15,8 @@ public:
     // 伺服器配置
     void setHost(const std::string& host);
     void setPort(int port);
-    void setIndexer(std::shared_ptr<class Indexer> indexer);
-    void setStorage(std::shared_ptr<class Storage> storage);
+    void setIndexer(std::shared_ptr<class JsonIndexer> indexer);
+    void setStorage(std::shared_ptr<class JsonStorage> storage);
     
     // 伺服器操作
     bool start();
@@ -32,8 +32,8 @@ private:
     
     std::string m_host;
     int m_port;
-    std::shared_ptr<class Indexer> m_indexer;
-    std::shared_ptr<class Storage> m_storage;
+    std::shared_ptr<class JsonIndexer> m_indexer;
+    std::shared_ptr<class JsonStorage> m_storage;
     std::atomic<bool> m_running;
     std::thread m_server_thread;
     

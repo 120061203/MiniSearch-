@@ -1,7 +1,6 @@
 #include "server.h"
 #include "logger.h"
-#include "indexer.h"
-#include "storage.h"
+#include "json_storage.h"
 #include <httplib.h>
 #include <sstream>
 #include <thread>
@@ -39,8 +38,8 @@ public:
     }
     
     bool start(const std::string& host, int port, 
-               std::shared_ptr<Indexer> indexer, 
-               std::shared_ptr<Storage> storage) {
+               std::shared_ptr<JsonIndexer> indexer,
+               std::shared_ptr<JsonStorage> storage) {
         m_indexer = indexer;
         m_storage = storage;
         
@@ -62,10 +61,23 @@ public:
 
 private:
     httplib::Server* m_server;
-    std::shared_ptr<Indexer> m_indexer;
-    std::shared_ptr<Storage> m_storage;
+    std::shared_ptr<JsonIndexer> m_indexer;
+    std::shared_ptr<JsonStorage> m_storage;
     
     void setupRoutes() {
+        // 設定 CORS 標頭的中間件
+        m_server->set_pre_routing_handler([](const httplib::Request& req, httplib::Response& res) {
+            res.set_header("Access-Control-Allow-Origin", "*");
+            res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+            res.set_header("Access-Control-Allow-Headers", "Content-Type");
+            return httplib::Server::HandlerResponse::Unhandled;
+        });
+        
+        // 處理 OPTIONS 請求
+        m_server->Options(".*", [](const httplib::Request&, httplib::Response& res) {
+            return;
+        });
+        
         // 健康檢查端點
         m_server->Get("/health", [](const httplib::Request&, httplib::Response& res) {
             res.set_content("OK", "text/plain");
@@ -121,20 +133,20 @@ private:
             
             LOG_INFO("搜尋查詢: " + query + " (limit=" + std::to_string(limit) + ", offset=" + std::to_string(offset) + ")");
             
-            SearchResult result = m_indexer->search(query, limit, offset);
+            auto documents = m_indexer->search(query, limit, offset);
             
             // 建立簡單的 JSON 回應
             std::stringstream json_response;
             json_response << "{";
             json_response << "\"query\":\"" << escapeJson(query) << "\",";
-            json_response << "\"total_count\":" << result.total_count << ",";
-            json_response << "\"search_time_ms\":" << result.search_time_ms << ",";
+            json_response << "\"total_count\":" << documents.size() << ",";
+            json_response << "\"search_time_ms\":0,";
             json_response << "\"limit\":" << limit << ",";
             json_response << "\"offset\":" << offset << ",";
             json_response << "\"documents\":[";
             
-            for (size_t i = 0; i < result.documents.size(); ++i) {
-                const auto& doc = result.documents[i];
+            for (size_t i = 0; i < documents.size(); ++i) {
+                const auto& doc = documents[i];
                 if (i > 0) json_response << ",";
                 
                 json_response << "{";
@@ -143,12 +155,10 @@ private:
                 json_response << "\"title\":\"" << escapeJson(doc.title) << "\",";
                 json_response << "\"score\":" << doc.score << ",";
                 
-                // 截取內容預覽
-                std::string preview = doc.text_content;
-                if (preview.length() > 200) {
-                    preview = preview.substr(0, 200) + "...";
-                }
-                json_response << "\"preview\":\"" << escapeJson(preview) << "\"";
+                // Google 風格的摘要
+                json_response << "\"snippet\":\"" << escapeJson(doc.snippet) << "\",";
+                json_response << "\"highlighted_title\":\"" << escapeJson(doc.highlighted_title) << "\",";
+                json_response << "\"highlighted_snippet\":\"" << escapeJson(doc.highlighted_snippet) << "\"";
                 json_response << "}";
             }
             
@@ -220,10 +230,10 @@ private:
             std::stringstream domain_stats;
             domain_stats << "{";
             domain_stats << "\"domain\":\"" << escapeJson(domain) << "\",";
-            domain_stats << "\"page_count\":" << m_storage->getPageCountByDomain(domain) << ",";
+            domain_stats << "\"page_count\":" << m_storage->getPageCount() << ",";
             domain_stats << "\"pages\":[";
             
-            std::vector<StoredPage> pages = m_storage->getPagesByDomain(domain);
+            std::vector<StoredPage> pages = m_storage->getAllPages();
             for (size_t i = 0; i < pages.size(); ++i) {
                 const auto& page = pages[i];
                 if (i > 0) domain_stats << ",";
@@ -328,11 +338,11 @@ void SearchServer::setPort(int port) {
     m_port = port;
 }
 
-void SearchServer::setIndexer(std::shared_ptr<Indexer> indexer) {
+void SearchServer::setIndexer(std::shared_ptr<JsonIndexer> indexer) {
     m_indexer = indexer;
 }
 
-void SearchServer::setStorage(std::shared_ptr<Storage> storage) {
+void SearchServer::setStorage(std::shared_ptr<JsonStorage> storage) {
     m_storage = storage;
 }
 

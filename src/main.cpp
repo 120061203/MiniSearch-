@@ -12,8 +12,7 @@
 #include "crawler.h"
 #include "parser.h"
 #include "task_queue.h"
-#include "indexer.h"
-#include "storage.h"
+#include "json_storage.h"
 #include "server.h"
 
 using namespace MiniSearch;
@@ -175,17 +174,17 @@ int main(int argc, char* argv[]) {
     LOG_INFO("資料庫路徑: " + config.db_path);
     
     try {
-        // 初始化儲存和索引器
-        auto storage = std::make_shared<Storage>();
-        auto indexer = std::make_shared<Indexer>();
+        // 初始化 JSON 儲存和索引器
+        auto storage = std::make_shared<JsonStorage>();
+        auto indexer = std::make_shared<JsonIndexer>();
         
-        if (!storage->initialize(config.db_path)) {
-            LOG_ERROR("無法初始化儲存系統");
+        if (!storage->initialize(config.db_path + ".json")) {
+            LOG_ERROR("無法初始化 JSON 儲存系統");
             return 1;
         }
         
-        if (!indexer->initialize(config.db_path)) {
-            LOG_ERROR("無法初始化索引系統");
+        if (!indexer->initialize(config.db_path + "_index.json")) {
+            LOG_ERROR("無法初始化 JSON 索引系統");
             return 1;
         }
         

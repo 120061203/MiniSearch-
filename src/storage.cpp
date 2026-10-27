@@ -27,6 +27,12 @@ public:
             return false;
         }
         
+        // 設定資料庫模式以確保資料持久化
+        sqlite3_exec(m_db, "PRAGMA journal_mode = DELETE", nullptr, nullptr, nullptr);
+        sqlite3_exec(m_db, "PRAGMA synchronous = FULL", nullptr, nullptr, nullptr);
+        sqlite3_exec(m_db, "PRAGMA cache_size = 1000", nullptr, nullptr, nullptr);
+        sqlite3_exec(m_db, "PRAGMA temp_store = MEMORY", nullptr, nullptr, nullptr);
+        
         return createTables();
     }
     
@@ -119,6 +125,8 @@ public:
                 sqlite3_exec(m_db, "ROLLBACK", nullptr, nullptr, nullptr);
                 return false;
             }
+            // 強制同步到磁碟
+            sqlite3_exec(m_db, "PRAGMA synchronous = FULL", nullptr, nullptr, nullptr);
             LOG_INFO("事務已提交: " + page.url);
         } else {
             LOG_ERROR("頁面儲存失敗: " + page.url);

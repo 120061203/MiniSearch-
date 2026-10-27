@@ -13,8 +13,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(CURL REQUIRED libcurl)
 pkg_check_modules(GUMBO REQUIRED gumbo)
 
-# 尋找 SQLite3
-find_package(SQLite3 REQUIRED)
+# 不再需要 SQLite3
 
 # 尋找 Redis
 find_package(PkgConfig REQUIRED)
@@ -25,6 +24,9 @@ find_path(HTTPLIB_INCLUDE_DIR httplib.h)
 if(NOT HTTPLIB_INCLUDE_DIR)
     message(FATAL_ERROR "httplib not found. Please install cpp-httplib")
 endif()
+
+# 尋找 nlohmann-json
+find_package(nlohmann_json REQUIRED)
 
 # 包含目錄
 include_directories(${CURL_INCLUDE_DIRS})
@@ -39,8 +41,7 @@ set(SOURCES
     src/crawler.cpp
     src/parser.cpp
     src/task_queue.cpp
-    src/indexer.cpp
-    src/storage.cpp
+    src/json_storage.cpp
     src/server.cpp
     src/logger.cpp
 )
@@ -50,10 +51,9 @@ set(HEADERS
     include/crawler.h
     include/parser.h
     include/task_queue.h
-    include/indexer.h
-    include/storage.h
     include/server.h
     include/logger.h
+    src/json_storage.h
 )
 
 # 建立可執行文件
@@ -63,8 +63,8 @@ add_executable(mini_search_engine ${SOURCES} ${HEADERS})
 target_link_libraries(mini_search_engine 
     ${CURL_LIBRARIES}
     ${GUMBO_LIBRARIES}
-    SQLite::SQLite3
     ${HIREDIS_LIBRARIES}
+    nlohmann_json::nlohmann_json
     pthread
 )
 
